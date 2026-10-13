@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC Inspector - KPI tuần</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="style2.css">
+</head>
+<body>
+<div class="app t-purple">
+  <aside class="side">
+    <div class="logo"><div class="lg" aria-hidden="true">🔍</div><div class="lt">QC INSPECTOR<small id="sub">KPI tuần</small></div></div>
+    <nav class="tabs" role="tablist" aria-label="Điều hướng">
+      <button role="tab" data-p="pOverview"><i>🏠</i>Tổng quan</button>
+      <button role="tab" data-p="pCompare"><i>📊</i>So sánh tuần</button>
+      <button role="tab" data-p="pHistory"><i>🗓️</i>Lịch sử 8 tuần</button>
+      <button role="tab" data-p="pDetail"><i>📋</i>Danh sách issue</button>
+      <a id="lnkPaint" href="#" target="_blank" rel="noopener" hidden><i>🎨</i>Trang đội sơn ↗</a>
+    </nav>
+    <div class="side-foot">
+      <div class="status" role="status"><span class="dot load" id="dot"></span><span id="statusTxt">Đang tải…</span></div>
+      <a class="btn" id="btnPhotos" href="#" target="_blank" rel="noopener" hidden>📁 Thư mục ảnh</a>
+      <button class="btn" id="btnRefresh">⟳ Làm mới</button>
+      <button class="btn" id="btnTv" title="Ẩn menu và bộ lọc để chiếu lên màn hình">Chế độ TV</button>
+      <button class="btn" id="btnLogout" hidden title="Xoá mã đã lưu trong trình duyệt này">Đổi mã truy cập</button>
+      <button class="btn" id="btnTheme" hidden>Sáng / Tối</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="banner" id="banner"></div>
+    <div class="topbar">
+      <span class="pill" id="pillTitle">1. DASHBOARD TỔNG QUAN – SUMMARY</span>
+      <div>
+        <section class="filters" id="filters" aria-label="Bộ lọc"></section>
+        <div class="updated" id="updated">Cập nhật đến<b>…</b></div>
+      </div>
+    </div>
+
+    <!-- 1. Tổng quan -->
+    <section class="pane" id="pOverview">
+      <div class="insight" id="hero"><h1 id="headline">Đang tải dữ liệu…</h1><p id="subline"></p></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid">
+        <div class="card s4"><h2>Trạng thái KPI tuần</h2><p class="sub" id="sState">Số inspector ở từng mức</p><div class="donut"><div class="chart"><canvas id="cState" role="img" aria-label="Biểu đồ vòng trạng thái KPI của inspector"></canvas></div><div class="lglist" id="lgState"></div></div></div>
+        <div class="card s8"><h2 id="tRank" class="act">Xếp hạng</h2>
+          <p class="sub">Vạch xanh dương là mức KPI. Thanh đen là số issue đã gửi. Nền đỏ nhạt: chưa gửi; nền vàng: chưa đủ; nền xanh: đạt.</p>
+          <div id="rank"></div></div>
+      </div>
+      <div class="grid">
+        <div class="card s7"><h2 id="tWeeks" class="act">Tỉ lệ đạt KPI theo tuần</h2><p class="sub">Số inspector ở mỗi mức, 8 tuần gần nhất.</p><div class="chart" style="height:250px"><canvas id="cWeeks" role="img" aria-label="Số inspector đạt, chưa đủ và chưa gửi theo tuần"></canvas></div></div>
+        <div class="card s5"><h2>Cần nhắc trong tuần</h2><p class="sub">Inspector chưa đạt KPI, sắp xếp theo số issue còn thiếu</p><div class="tw" id="remind"></div></div>
+      </div>
+      <div class="grid"><div class="card s12"><h2 id="tLatest" class="act">Issue mới nhất trong tuần</h2><p class="sub">Bấm vào ảnh để xem lớn kèm chi tiết; nút "Mở thư mục" mở thư mục ảnh trên Google Drive.</p><div class="tw" id="latest"></div></div></div>
+    </section>
+
+    <!-- 2. So sánh tuần -->
+    <section class="pane" id="pCompare">
+      <div class="card"><h2 id="tCmp" class="act">So sánh 2 tuần liên tiếp</h2><p class="sub">Tuần đang chọn ở bộ lọc "Tuần" so với tuần liền trước.</p><div id="cmp"></div></div>
+    </section>
+
+    <!-- 3. Lịch sử -->
+    <section class="pane" id="pHistory">
+      <div class="card"><h2 id="tMatrix" class="act">Lịch sử từng inspector</h2><p class="sub">Mỗi ô là số issue trong một tuần (cột ghi ngày Thứ 2). ✓ đạt · ! chưa đủ · ✕ chưa gửi.</p><div class="tw" id="matrix"></div></div>
+    </section>
+
+    <!-- 4. Danh sách -->
+    <section class="pane" id="pDetail">
+      <div class="card">
+        <h2 id="tDetail" class="act">Danh sách issue</h2>
+        <p class="sub"><input id="q" class="search" type="search" placeholder="Tìm mô tả, section, dự án…" aria-label="Tìm kiếm" style="padding:6px 10px;width:280px;max-width:70vw"> <button class="btn" id="btnCsv">Tải CSV</button></p>
+        <div class="tw" id="detail"></div>
+        <div class="pager" id="pager"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <form class="gate-box" id="gateForm" autocomplete="off">
+    <h2>Trang QC cần mã truy cập</h2>
+    <p id="gateMsg">Nhập mã do quản trị cấp. Mã chỉ được lưu trong trình duyệt này.</p>
+    <input id="gateKey" type="password" placeholder="Mã truy cập" required autocomplete="off" aria-label="Mã truy cập">
+    <button class="btn on" type="submit">Mở dashboard</button>
+  </form>
+</div>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="app2.js"></script>
+<script>
+const DEFAULTS = { week: "", inspector: "", q: "" };
+const F = { ...DEFAULTS };
+const WEEKS_BACK = 8;
+const TARGET = CONFIG.WEEKLY_TARGET;
+const PILLS = { pOverview: "1. DASHBOARD TỔNG QUAN – SUMMARY", pCompare: "2. SO SÁNH TUẦN – WEEK COMPARE", pHistory: "3. LỊCH SỬ KPI – HISTORY", pDetail: "4. DANH SÁCH ISSUE – ISSUE LIST" };
+
+const weekList = () => { const cur = weekStart(new Date()); return Array.from({ length: WEEKS_BACK }, (_, k) => addDays(cur, -7 * (WEEKS_BACK - 1 - k))); };
+const status = n => n <= 0 ? "red" : n < TARGET ? "yellow" : "green";
+const ST = { red: ["✕", "Chưa gửi"], yellow: ["!", "Chưa đủ"], green: ["✓", "Đạt"] };
+const ST_COLOR = { green: L.green, yellow: L.orange, red: L.red };
+const selWeek = () => F.week ? new Date(F.week + "T00:00:00") : weekStart(new Date());
+const inWeek = (i, w) => i.date >= w && i.date < addDays(w, 7);
+const fmtWeek = w => `${dmy(w)} – ${dmy(addDays(w, 6))}`;
+const isCurrent = w => +w === +weekStart(new Date());
+
+/* Danh sách tính KPI của tuần w: người đang hoạt động (MASTER_USER, Active = Y) + người chưa có trong MASTER_USER nhưng có issue trong tuần đó. Người đã nghỉ (Active = N) bị loại khỏi KPI; issue của họ vẫn hiện ở các bảng. */
+function roster(w){
+  const names = new Map(DATA.users.filter(u => u.active !== false).map(u => [u.name, u.id]));
+  const off = new Set(DATA.users.filter(u => u.active === false).map(u => u.name));
+  if(w) DATA.issues.forEach(i => { if(i.inspector && inWeek(i, w) && !names.has(i.inspector) && !off.has(i.inspector)) names.set(i.inspector, i.inspectorId || ""); });
+  return [...names.entries()].map(([name, id]) => ({ name, id }));
+}
+function weekStats(w){
+  return roster(w).map(u => {
+    const list = DATA.issues.filter(i => i.inspector === u.name && inWeek(i, w));
+    return { ...u, n: list.length, photos: list.reduce((s,i) => s + i.photos, 0), crit: list.filter(i => /critical/i.test(i.severity)).length, last: list.length ? list[0].date : null, st: status(list.length) };
+  }).sort((a,b) => b.n - a.n || (b.last || 0) - (a.last || 0) || a.name.localeCompare(b.name, "vi"));
+}
+const names = list => list.map(s => s.name).join(", ");
+
+function renderHero(stats, w){
+  const red = stats.filter(s => s.st === "red"), yellow = stats.filter(s => s.st === "yellow"), cur = isCurrent(w);
+  const left = 7 - ((new Date().getDay() + 6) % 7);
+  let h, p = `Tuần ${fmtWeek(w)}${cur ? ` · còn ${left} ngày` : ""} · KPI tối thiểu ${TARGET} issue mỗi người.`;
+  const bad = red.length > 0;
+  if(!stats.length) h = "Chưa có danh sách inspector.";
+  else if(!red.length && !yellow.length) h = `Cả ${stats.length} inspector đã đạt KPI tuần này.`;
+  else {
+    h = bad ? `${red.length} inspector chưa gửi issue nào` : `${yellow.length} inspector chưa đủ ${TARGET} issue`;
+    if(bad && yellow.length) h += `, ${yellow.length} người chưa đủ KPI`;
+    h += cur ? "." : " trong tuần này.";
+    p = (red.length ? `Chưa gửi: ${names(red)}. ` : "") + (yellow.length ? `Chưa đủ: ${yellow.map(s => `${s.name} (${s.n}/${TARGET})`).join(", ")}. ` : "") + p;
+  }
+  $("#hero").classList.toggle("bad", bad);
+  $("#headline").textContent = h; $("#subline").textContent = p;
+}
+
+function renderKpis(stats, w){
+  const g = stats.filter(s => s.st === "green").length, y = stats.filter(s => s.st === "yellow").length, r = stats.filter(s => s.st === "red").length;
+  const tot = stats.reduce((s,x) => s + x.n, 0), top = stats[0], n = stats.length || 1;
+  $("#kpis").innerHTML = [
+    { cls: "blue", icon: "👥", label: "Inspector tính KPI", value: stats.length, sub: `tuần ${fmtWeek(w)}` },
+    { cls: "green", icon: "✅", label: `Đạt KPI (≥ ${TARGET})`, value: `${g}/${stats.length}`, sub: `<b>${Math.round(g / n * 100)}%</b> inspector` },
+    { cls: "orange", icon: "⚠️", label: "Chưa đủ", value: y, sub: `gửi ${TARGET - 1} issue, cần thêm` },
+    { cls: "red", icon: "⛔", label: "Chưa gửi (0 issue)", value: r, sub: r ? "cần nhắc ngay" : "không ai bị bỏ sót" },
+    { cls: "purple", icon: "🧾", label: "Tổng issue trong tuần", value: fmt(tot), sub: `${(tot / n).toFixed(1)} issue mỗi người` },
+    { cls: "teal", icon: "🥇", label: "Nhiều issue nhất", value: top && top.n ? top.name : "—", sub: top && top.n ? `${top.n} issue` : "", txt: true }
+  ].map(kcard).join("");
+}
+
+function renderState(stats){
+  const c = { green: 0, yellow: 0, red: 0 }; stats.forEach(s => c[s.st]++);
+  const keys = ["green", "yellow", "red"], list = keys.map(k => [ST[k][0] + " " + ST[k][1], c[k]]);
+  donutCard({ canvas: "cState", legend: "lgState", list, colors: keys.map(k => ST_COLOR[k]), label: "inspector" });
+}
+
+function renderRank(stats, w){
+  $("#tRank").textContent = stats[0] && stats[0].n ? `${stats[0].name} dẫn đầu tuần ${fmtWeek(w)} với ${stats[0].n} issue` : `Tuần ${fmtWeek(w)}: chưa có issue nào`;
+  if(!stats.length){ $("#rank").innerHTML = `<div class="empty">Chưa có danh sách inspector.</div>`; return; }
+  const scale = Math.max(TARGET * 2, stats[0].n), pct = x => x / scale * 100;
+  let prevN = null, rk = 0;
+  $("#rank").innerHTML = `<div class="qr head"><div>Hạng</div><div>Inspector</div><div>Issue trong tuần (KPI = ${TARGET})</div><div style="text-align:right">Số</div><div>Trạng thái</div></div>` +
+    stats.map((s, idx) => {
+      if(s.n !== prevN){ rk = idx + 1; prevN = s.n; }
+      const [sym, txt] = ST[s.st];
+      return `<div class="qr"><div class="rk">${s.n ? rk : "–"}${s.n && rk <= 3 ? " " + ["🥇","🥈","🥉"][rk - 1] : ""}</div>
+        <div class="nm">${esc(s.name)}<small>${esc(s.id)}${s.last ? " · gần nhất " + s.last.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""}</small></div>
+        <div class="bl" role="img" aria-label="${esc(s.name)}: ${s.n} trên ${TARGET} issue"><div class="b0" style="width:${pct(1)}%"></div><div class="b1" style="left:${pct(1)}%;width:${pct(TARGET - 1)}%"></div><div class="v" style="width:${pct(s.n)}%"></div><div class="tg" style="left:calc(${pct(TARGET)}% - 1px)"></div></div>
+        <div class="ct">${s.n}</div><div><span class="st ${s.st}">${sym} ${txt}</span></div></div>`; }).join("");
+}
+
+function renderRemind(stats){
+  const list = stats.filter(s => s.st !== "green").sort((a, b) => a.n - b.n || a.name.localeCompare(b.name, "vi"));
+  $("#remind").innerHTML = list.length ? `<table><thead><tr><th>Inspector</th><th>Đã gửi</th><th>Còn thiếu</th><th>Trạng thái</th></tr></thead><tbody>` +
+    list.map(s => `<tr><td>${esc(s.name)}</td><td>${s.n}/${TARGET}</td><td><span class="hc ${s.st === "red" ? "r" : "o"}">${TARGET - s.n}</span></td><td><span class="st ${s.st}">${ST[s.st][0]} ${ST[s.st][1]}</span></td></tr>`).join("") + `</tbody></table>`
+    : `<div class="empty">Tất cả inspector đã đạt KPI tuần này. 🎉</div>`;
+}
+
+function renderWeeksChart(){
+  const weeks = weekList();
+  const per = weeks.map(w => { const c = { green: 0, yellow: 0, red: 0 };
+    roster(w).forEach(u => c[status(DATA.issues.filter(i => i.inspector === u.name && inWeek(i, w)).length)]++); return c; });
+  const done = per.slice(0, -1), avg = done.length ? Math.round(done.reduce((s,c) => s + c.green / Math.max(1, c.green + c.yellow + c.red), 0) / done.length * 100) : null;
+  $("#tWeeks").textContent = avg === null ? "Tỉ lệ đạt KPI theo tuần" : `Trung bình ${avg}% inspector đạt KPI ở các tuần đã đóng`;
+  const keys = ["green", "yellow", "red"], names = ["✓ Đạt", "! Chưa đủ", "✕ Chưa gửi"];
+  mkLight("cWeeks", { type: "bar", data: { labels: weeks.map(dmy), datasets: keys.map((k, di) => ({ label: names[di], data: per.map(c => c[k]), backgroundColor: ST_COLOR[k], borderRadius: 2 })) },
+    options: { plugins: { legend: { position: "top", align: "start", labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { callbacks: { footer: it => { const c = per[it[0].dataIndex], t = c.green + c.yellow + c.red; return t ? "Đạt: " + Math.round(c.green / t * 100) + "%" : ""; } } } },
+      scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0 }, title: { display: true, text: "Tuần bắt đầu Thứ 2" } }, y: { stacked: true, beginAtZero: true, grid: { color: "#E8EDF5" }, border: { display: false }, ticks: { precision: 0 }, title: { display: true, text: "Số inspector" } } } } });
+}
+
+function renderMatrix(){
+  const weeks = weekList(), act = new Set(DATA.users.filter(u => u.active !== false).map(u => u.name));
+  const people = [...new Map(weeks.flatMap(w => roster(w)).map(u => [u.name, u])).values()];
+  if(!people.length){ $("#matrix").innerHTML = `<div class="empty">Chưa có dữ liệu.</div>`; return; }
+  const rows = people.map(u => ({ u, cells: weeks.map(w => DATA.issues.filter(i => i.inspector === u.name && inWeek(i, w)).length) }));
+  rows.forEach(r => { r.total = r.cells.reduce((a,b) => a + b, 0); r.miss = act.has(r.u.name) ? r.cells.slice(0, -1).filter(n => n < TARGET).length : 0; });
+  rows.sort((a,b) => b.miss - a.miss || a.total - b.total || a.u.name.localeCompare(b.u.name, "vi"));
+  const worst = rows[0];
+  $("#tMatrix").textContent = worst && worst.miss ? `${worst.u.name} chưa đạt KPI ${worst.miss}/${WEEKS_BACK - 1} tuần đã đóng` : "Mọi inspector đạt KPI ở các tuần đã đóng";
+  $("#matrix").innerHTML = `<table class="heat"><thead><tr><th>Inspector</th>${weeks.map(w => `<th>${dmy(w)}</th>`).join("")}<th>Tổng</th><th>Tuần chưa đạt</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${esc(r.u.name)}</td>${r.cells.map(n => { if(!n && !act.has(r.u.name)) return `<td><span style="color:var(--muted)" title="Không còn hoạt động">·</span></td>`; const s = status(n); return `<td><span class="cell ${s}" title="${ST[s][1]}">${ST[s][0]} ${n}</span></td>`; }).join("")}<td><b>${r.total}</b></td><td>${r.miss}</td></tr>`).join("") + `</tbody></table>`;
+}
+
+const detail = makeDetail({
+  el: $("#detail"), pager: $("#pager"), name: "issue_qc",
+  search: i => [i.desc, i.section, i.project, i.type, i.inspector].join(" "),
+  cols: [
+    { k:"date", t:"Thời gian", val:i=>i.date.getTime(), html:i=>i.date.toLocaleString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}) },
+    { k:"inspector", t:"Inspector", val:i=>i.inspector, html:i=>esc(i.inspector) },
+    { k:"factory", t:"Nhà máy", val:i=>i.factory, html:i=>esc(i.factory) },
+    { k:"project", t:"Dự án", val:i=>i.project, html:i=>esc(i.project) },
+    { k:"section", t:"Section", val:i=>i.section, html:i=>esc(i.section) },
+    { k:"type", t:"Loại lỗi", val:i=>i.type, html:i=>`<span class="tag${/critical/i.test(i.severity)?" crit":""}">${esc(shortType(i.type))}</span>` },
+    { k:"desc", t:"Mô tả", cls:"desc", val:i=>i.desc, html:i=>esc(i.desc) },
+    { k:"photos", t:"Ảnh gốc", val:i=>i.photos, html:i=>photoLink(i) }
+  ],
+  csv: [["Timestamp",i=>i.ts],["Inspector ID",i=>i.inspectorId],["Inspector",i=>i.inspector],["Customer",i=>i.customer],["Project",i=>i.project],["Factory",i=>i.factory],["Section ID",i=>i.section],["Process",i=>i.process],["Issue Type",i=>i.type],["Description",i=>i.desc],["Photo Folder",i=>i.folder],["Photo Count",i=>i.photos]]
+});
+const weekRows = () => { const w = selWeek(); return DATA.issues.filter(i => inWeek(i, w) && (!F.inspector || i.inspector === F.inspector)); };
+
+function render(){
+  writeHash(F, DEFAULTS);
+  const w = selWeek(), stats = weekStats(w);
+  renderHero(stats, w); renderKpis(stats, w); renderState(stats); renderRank(stats, w); renderWeeksChart(); renderRemind(stats); renderMatrix();
+  renderWeekCompare({ el: $("#cmp"), titleEl: $("#tCmp"), rows: DATA.issues, w, dims: [["Inspector", i => i.inspector], ["Loại lỗi", i => i.type], ["Dự án", i => i.project], ["Nhà máy", i => i.factory]], shorten: shortType });
+  latestTable($("#latest"), DATA.issues.filter(i => inWeek(i, w)), { n: 8, inspector: true });
+  $("#tLatest").textContent = `Issue mới nhất trong tuần ${fmtWeek(w)}`;
+  const rows = weekRows();
+  $("#tDetail").textContent = `${fmt(rows.length)} issue trong tuần ${fmtWeek(w)}${F.inspector ? " của " + F.inspector : ""}`;
+  detail.render(rows, F.q); setUpdated();
+}
+
+function onData(themeOnly){
+  $("#gate").hidden = true; $("#btnLogout").hidden = !CONFIG.QC_KEY;
+  if(!themeOnly){
+    const cur = weekStart(new Date());
+    const weekOpts = Array.from({ length: WEEKS_BACK }, (_, k) => addDays(cur, -7 * k)).map((w, k) => { const v = k === 0 ? "" : ymd(w);
+      return `<option value="${v}"${(F.week || "") === v ? " selected" : ""}>${k === 0 ? "Tuần này" : k === 1 ? "Tuần trước" : "Tuần"} (${fmtWeek(w)})</option>`; }).join("");
+    const ns = [...new Set([...DATA.users.map(u => u.name), ...DATA.issues.map(i => i.inspector)].filter(Boolean))].sort((a,b) => a.localeCompare(b, "vi"));
+    $("#filters").innerHTML = `<label>Tuần<select data-k="week">${weekOpts}</select></label>
+      <label>Inspector (danh sách issue)<select data-k="inspector"><option value="">Tất cả</option>${ns.map(n => `<option${F.inspector === n ? " selected" : ""} value="${esc(n)}">${esc(n)}</option>`).join("")}</select></label>`;
+    $("#filters").querySelectorAll("[data-k]").forEach(x => x.addEventListener("change", e => { F[e.target.dataset.k] = e.target.value; detail.resetPage(); render(); }));
+  }
+  render();
+}
+
+$("#sub").textContent = `KPI ${TARGET} issue mỗi tuần · Thứ 2 → Chủ nhật`;
+$("#q").addEventListener("input", e => { F.q = e.target.value; detail.resetPage(); detail.render(weekRows(), F.q); writeHash(F, DEFAULTS); });
+$("#btnCsv").onclick = () => detail.exportCsv();
+readHash(F); $("#q").value = F.q;
+initTabs(id => setPill(PILLS[id]));
+
+/* Mã truy cập QC: chỉ cần khi quản trị đặt QC_KEY trong Apps Script. Nhập 1 lần, lưu trong trình duyệt này. */
+const KEYNAME = "issueDash.qcKey";
+(function(){   // link chia sẻ kèm mã: ...#key=XXXX → lưu mã rồi xoá khỏi thanh địa chỉ
+  const p = new URLSearchParams(location.hash.slice(1));
+  if(p.has("key")){ try{ localStorage.setItem(KEYNAME, p.get("key")); }catch(e){} p.delete("key"); history.replaceState(null, "", location.pathname + location.search + (p.toString() ? "#" + p.toString() : "")); }
+})();
+try{ CONFIG.QC_KEY = localStorage.getItem(KEYNAME) || ""; }catch(e){}
+
+function showGate(msg, isErr){
+  $("#gate").hidden = false; const m = $("#gateMsg"); m.textContent = msg; m.className = isErr ? "err" : ""; $("#gateKey").value = ""; $("#gateKey").focus();
+}
+$("#gateForm").addEventListener("submit", e => {
+  e.preventDefault(); const k = $("#gateKey").value.trim(); if(!k) return;
+  try{ localStorage.setItem(KEYNAME, k); }catch(x){} CONFIG.QC_KEY = k;
+  $("#gateMsg").textContent = "Đang kiểm tra mã…"; $("#gateMsg").className = ""; $("#btnRefresh").click();
+});
+$("#btnLogout").onclick = () => { try{ localStorage.removeItem(KEYNAME); localStorage.removeItem("issueDash.cache.qc"); }catch(e){} location.reload(); };
+const pu = safeUrl(CONFIG.PAINT_URL); if(pu){ const l = $("#lnkPaint"); l.href = pu; l.hidden = false; }
+
+startApp({ view: "qc", onData, onAuthFail: () => showGate(CONFIG.QC_KEY ? "Mã không đúng hoặc đã được đổi. Nhập lại mã." : "Nhập mã do quản trị cấp. Mã chỉ được lưu trong trình duyệt này.", !!CONFIG.QC_KEY) });
+</script>
+</body>
+</html>
